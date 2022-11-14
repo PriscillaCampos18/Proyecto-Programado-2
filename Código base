@@ -194,3 +194,235 @@ static menu_item_t task_input_items[] = {
 static int task_input_items_len = array_size(task_input_items);
 
 static char buffer[BUFFER_SIZE] = { 0 };
+
+
+
+typedef struct data_t data_t;
+
+/* typedef char desc_t[20]; */
+
+struct data_t
+{
+  int     id;
+  desc_t data;
+};
+
+void
+print_data (data_t d)
+{
+  printf ("{%02d, %s}\n", d.id, (char*)&d.data);
+}
+
+void
+write_list_to_file (list_t* list, char* file_name)
+{
+  FILE* f = fopen (file_name, "w");
+  if (f != NULL)
+  {
+    {
+      node_t* head = list->head;
+      node_t* it = head;
+      node_t* tmp;
+      /* int iterator = 0; */
+      while (it != NULL)
+      {
+        tmp = it->next;
+        fwrite (&it->task, sizeof (it->task), 1, f);
+        it = tmp;
+        /* iterator++; */
+      }
+      /* printf ("iterator: %d fwrite\n", iterator); */
+    }
+    fclose (f);
+  }
+}
+
+void
+test_populate_list (list_t* list)
+{
+  for (int i = 0; i < 0x4; ++i)
+  {
+    task_t t = {
+      .id          = i,
+      .description = {""},
+      .type        = INVALID_TASK - 1 - i,
+      .effort      = 2,
+      .time        = 35,
+      .in_charge   = {""}
+    };
+
+    /* task_t t; */
+    /* t.id          = i; */
+    /* t.description = {""}; */
+    /* t.type        = INVALID_TASK - i; */
+    /* t.effort      = 2; */
+    /* t.time        = 35; */
+    /* t.in_charge   = {""}; */
+
+    /* d.id = i + 1; */
+    /* int limit = (int)(sizeof (desc_t) - 1); */
+    /* /1* printf ("limit: %d\n", limit); *1/ */
+    /* for (int j = 0; j < limit; ++j) */
+    /* { */
+    /*   ((char*)&d.data)[j] = 9 - i + '0'; */
+    /* } */
+    push (list, t);
+  }
+}
+
+void
+print_task(task_t t)
+{
+  printf ("{");
+  printf (" id: %d, ", t.id);
+  printf (" description: \"%s\", ", t.description.data);
+  printf (" type: %s, ", task_type_str(t.type));
+  printf (" effort: %d, ", t.effort);
+  printf (" time: %d, ", t.time);
+  printf (" in charge: \"%s\"", t.in_charge.data);
+  printf ("}\n");
+}
+
+void
+print_list (list_t* list)
+{
+  node_t* head = list->head;
+  node_t* it = head;
+  node_t* tmp;
+  /* int iterator = 0; */
+  while (it != NULL)
+  {
+    tmp = it->next;
+    print_task (it->task);
+    /* printf ("%s\n", (char*)&it->task.description); */
+    it = tmp;
+    /* iterator++; */
+  }
+  /* printf ("iterator: %d print_list\n", iterator); */
+}
+
+void
+read_list_from_file (list_t* list, char* file_name)
+{
+  FILE* f = fopen (file_name, "r");
+  if (f != NULL)
+  {
+    task_t t;
+    /* data_t d; */
+    /* int iterator = 0; */
+    size_t bytes_read = 0;
+    bytes_read = fread (&t, sizeof(t), 1, f);
+    while (bytes_read > 0 && !feof (f))
+    {
+      push (list, t);
+      bytes_read = fread (&t, sizeof(t), 1, f);
+      /* iterator++; */
+    }
+    /* printf ("iterator: %d do while\n", iterator); */
+    fclose (f);
+  }
+}
+
+int
+prompt_task_int (void)
+{
+  int result = -1;
+  char int_buf[ID_BUFFER_SIZE] = {0};
+  printf ("input integer (must be under %lu digits): ", sizeof(int_buf));
+  bool loop_cond = true;
+  while (loop_cond && fgets( int_buf, sizeof(int_buf), stdin))
+  {
+    char *newline = strchr( int_buf, '\n' );
+    if ( newline == NULL )
+    {
+      /* input too big, throw away invalid input, show message to user */
+      for (int c = getchar(); c != EOF && c != '\n'; c = getchar())
+        ;
+      printf ("input integer (must be under %lu digits): ", sizeof(int_buf));
+    }
+    else
+    {
+      /* int len = newline - int_buf; */
+      /* printf ("len: %d\n", len); */
+      result = atoi (int_buf);
+      /* memcpy (result.data, int_buf, len); */
+      if (result > 0)
+      {
+        loop_cond = false;
+      }
+    }
+  }
+  return result;
+}
+
+desc_t
+prompt_task_desc (void)
+{
+  desc_t result = {{0}};
+  char desc_buffer[sizeof(result)+1] = {0};
+  printf ("description (must be under %lu characters): ", sizeof(result));
+  bool loop_cond = true;
+  while (loop_cond && fgets( desc_buffer, sizeof(desc_buffer), stdin))
+  {
+    char *newline = strchr( desc_buffer, '\n' );
+    if ( newline == NULL )
+    {
+      /* input too big, throw away invalid input, show message to user */
+      for (int c = getchar(); c != EOF && c != '\n'; c = getchar())
+        ;
+      printf ("description (must be under %lu characters): ", sizeof(result));
+    }
+    else
+    {
+      int len = newline - desc_buffer;
+      /* printf ("len: %d\n", len); */
+      memcpy (result.data, desc_buffer, len);
+      loop_cond = false;
+    }
+  }
+  return result;
+}
+
+task_t
+prompt_task_input (void)
+{
+  task_t result = { 0 };
+  {
+    printf ("please answer each prompt to fill task data\n");
+    result.id = prompt_task_int ();
+    /* TODO: check if ID is in use */
+    result.description = prompt_task_desc ();
+
+    {
+      printf ("input task type:\n");
+      for (int i = 0; i < INVALID_TASK; ++i)
+      {
+        printf ("%d: %s\n", i + 1, task_type_str (i));
+      }
+      /* printf ("\nyour selection: "); */
+      int type = -1;
+      while (true)
+      {
+        type = prompt_task_int ();
+        if (type < 0 && type >= INVALID_TASK)
+        {
+          continue;
+        }
+        break;
+      }
+      /* printf ("\ntype: %d\n", type); */
+      result.type = type - 1;
+    }
+    {
+      printf ("effort, ");
+      int effort = prompt_task_int ();
+      result.effort = effort;
+    }
+    {
+      printf ("time, ");
+      int time = prompt_task_int ();
+      result.time = time;
+    }
+  }
+  return result;
+}
