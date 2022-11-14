@@ -91,3 +91,106 @@ typedef struct
   node_t* head;
   node_t* tail;
 } list_t;
+void
+meta_menu (menu_item_t* items, int items_len, bool *loop_close_cond);
+
+void
+input_task (void);
+
+static inline void
+main_quit (void);
+
+char const*
+task_type_str(task_type_t type);
+
+static inline void
+meta_prompt (menu_item_t* items, int items_len);
+
+static inline void
+input_task_quit (void);
+
+task_t
+prompt_task_input (void);
+
+/* global variable declarations */
+static bool main_close = false;
+static bool task_input_close = false;
+static bool description_input_close = false;
+
+static menu_item_t main_items[] = {
+  {
+    .msg = "input task",
+    .action = input_task
+  },
+  {
+    .msg = "quit",
+    .action = main_quit
+  }
+};
+int main_items_len = array_size(main_items);
+
+list_t tasks = {
+  .head = NULL,
+  .tail = NULL
+};
+
+void
+clear_list (list_t* list)
+{
+  node_t* head = list->head;
+  node_t* it = head;
+  node_t* tmp;
+  /* int iterator = 0; */
+  while (it != NULL)
+  {
+    tmp = it->next;
+    free (it);
+    /* printf ("%s\n", (char*)&it->task.description); */
+    it = tmp;
+    /* iterator++; */
+  }
+  /* printf ("iterator: %d clear_list\n", iterator); */
+  list->head = NULL;
+  list->tail = NULL;
+}
+
+void
+push (list_t* list, task_t t)
+{
+  node_t* new = (node_t*)malloc (sizeof(*new));
+  new->task = t;
+  new->next = NULL;
+  new->prev = NULL;
+  if (list->tail == NULL)
+  {
+    list->head = new;
+    list->tail = new;
+  }
+  else
+  {
+    list->tail->next = new;
+    new->prev = list->tail;
+    list->tail = new;
+  }
+}
+
+static inline void
+closed_task_input (void)
+{
+  task_t t = prompt_task_input ();
+  push (&tasks, t);
+}
+
+static menu_item_t task_input_items[] = {
+  {
+    .msg = "input task",
+    .action = closed_task_input
+  },
+  {
+    .msg = "quit",
+    .action = input_task_quit
+  }
+};
+static int task_input_items_len = array_size(task_input_items);
+
+static char buffer[BUFFER_SIZE] = { 0 };
