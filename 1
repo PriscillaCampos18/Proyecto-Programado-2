@@ -1,0 +1,85 @@
+#include <stdio.h>   
+#include <stdlib.h>  
+#include <string.h>
+
+typedef struct
+{
+  char* msg;
+  action_t action;
+} menu_item_t;
+
+typedef enum
+{
+  OPERATIVE,
+  APPROVAL,
+  CONTRACT,
+  MANAGEMENT,
+  CHANGE,
+  INVALID_TASK
+} task_type_t;
+
+typedef struct
+{
+  char data[DESCRIPTION_BUFFER_SIZE];
+} desc_t;
+
+typedef struct
+{
+  char data[IN_CHARGE_BUFFER_SIZE];
+} incharge_t;
+
+typedef struct
+{
+  int         id;
+  /* char*       description; */
+  desc_t      description;
+  task_type_t type;
+  int         effort;
+  int         time;
+  /* char*       in_charge; */
+  incharge_t  in_charge;
+} task_t;
+
+typedef enum
+{
+  TXT,
+  IMG
+} doc_type_t;
+
+typedef struct
+{
+  int        id;
+  char*      route;
+  char*      description;
+  doc_type_t type;
+} doc_t;
+
+typedef enum
+{
+  INVALID_RESOURCE
+} res_type_t;
+
+typedef struct
+{
+  int        id;
+  char*      name;
+  res_type_t type;
+  int        capacity;
+  int        available_amount;
+  char*      in_charge;
+} resource_t;
+
+typedef struct node node_t;
+
+struct node
+{
+  task_t task;
+  node_t* prev;
+  node_t* next;
+};
+
+typedef struct
+{
+  node_t* head;
+  node_t* tail;
+} list_t;
